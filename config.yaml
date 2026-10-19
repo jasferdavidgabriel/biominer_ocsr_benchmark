@@ -1,0 +1,14 @@
+# Paths are relative to the repo root, so this works on any machine
+data:
+  ground_truth_csv: data/ground_truth_SMILES_confirmed_1,2,4,6,16,19.csv
+  pdf_dir: data/pdfs
+  id_column: paperID
+  name_column: "name of molecule"
+  smiles_column: canonical_SMILES
+
+biominer:
+  repo_dir: ../BioMiner        # where BioMiner is cloned on the GPU machine
+  config_path: BioMiner/config/default_open_source.yaml
+
+output:
+  results_dir: results
