@@ -2,6 +2,7 @@
 
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import rdFingerprintGenerator
+import pandas as pd
 
 RDLogger.DisableLog("rdApp.*")  # hide RDKit warnings about unparseable SMILES
 MORGAN_GENERATOR = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
@@ -41,3 +42,34 @@ def score_paper(true_smiles_list, predicted_smiles_list):
             "best_tanimoto": round(best_score, 4),
         })
     return rows, valid_preds
+
+def evaluate_all(ground_truth, predictions, id_col, name_col, smiles_col):
+    """Score every paper; return a per molecule table and an overall summary."""
+    predictions = predictions.copy()
+    predictions["paper_id"] = predictions["paper_id"].astype(str)  # match ground truth ID type
+
+    per_molecule, num_predictions, num_valid, num_correct = [], 0, 0, 0
+    for paper_id, paper_truth in ground_truth.groupby(id_col):
+        paper_preds = predictions.loc[predictions["paper_id"] == paper_id, "predicted_smiles"].tolist()
+        rows, valid_preds = score_paper(paper_truth[smiles_col].tolist(), paper_preds)
+
+        for row, name in zip(rows, paper_truth[name_col]):
+            row.update({"paper_id": paper_id, "molecule_name": name})
+            per_molecule.append(row)
+
+        true_set = {row["true_canonical"] for row in rows}
+        num_predictions += len(paper_preds)
+        num_valid += len(valid_preds)
+        num_correct += sum(1 for pred in valid_preds if pred in true_set)
+
+    results = pd.DataFrame(per_molecule)
+    summary = {
+        "num_papers": int(results["paper_id"].nunique()),
+        "num_true_molecules": int(len(results)),
+        "num_predictions": int(num_predictions),
+        "valid_prediction_rate": round(num_valid / num_predictions, 4) if num_predictions else 0.0,
+        "exact_match_recall": round(float(results["exact_match"].mean()), 4),
+        "precision": round(num_correct / num_predictions, 4) if num_predictions else 0.0,
+        "mean_best_tanimoto": round(float(results["best_tanimoto"].mean()), 4),
+    }
+    return results, summary

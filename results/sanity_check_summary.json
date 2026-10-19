@@ -1,0 +1,9 @@
+{
+  "num_papers": 6,
+  "num_true_molecules": 222,
+  "num_predictions": 222,
+  "valid_prediction_rate": 1.0,
+  "exact_match_recall": 1.0,
+  "precision": 1.0,
+  "mean_best_tanimoto": 1.0
+}
